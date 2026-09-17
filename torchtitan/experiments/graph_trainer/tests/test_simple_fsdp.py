@@ -33,6 +33,22 @@ class TestApplySimpleFSDPSingleRank(unittest.TestCase):
             dist.destroy_process_group()
 
     @patch("torchtitan.distributed.parallel_dims.device_type", "cpu")
+    def test_preserves_frozen_parameters(self):
+        parallel_dims = ParallelDims(
+            dp_replicate=1, dp_shard=1, cp=1, tp=1, pp=1, ep=1, world_size=1
+        )
+        model = nn.Linear(8, 8)
+        model.weight.requires_grad_(False)
+        model = apply_simple_fsdp(
+            model, parallel_dims=parallel_dims, training=TrainingConfig()
+        )
+        self.assertFalse(model._parameters["weight"].requires_grad)
+        self.assertTrue(model._parameters["bias"].requires_grad)
+        model(torch.randn(2, 8, dtype=torch.bfloat16)).sum().backward()
+        self.assertIsNone(model._parameters["weight"].grad)
+        self.assertIsNotNone(model._parameters["bias"].grad)
+
+    @patch("torchtitan.distributed.parallel_dims.device_type", "cpu")
     def test_uses_dtensor_storage_and_local_compute(self):
         parallel_dims = ParallelDims(
             dp_replicate=1,

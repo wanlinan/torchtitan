@@ -10,6 +10,9 @@ import os
 from tests.integration_tests import OverrideDefinitions
 from tests.integration_tests.run_tests import run_tests
 
+from torchtitan.experiments.graph_trainer.deepseek_v4 import (
+    config_registry as deepseek_v4_recipes,
+)
 from torchtitan.experiments.graph_trainer.llama3 import (
     config_registry as llama3_recipes,
 )
@@ -587,6 +590,21 @@ def _build_deepseek_v3_tests() -> list[OverrideDefinitions]:
     ]
 
 
+def _build_deepseek_v4_tests() -> list[OverrideDefinitions]:
+    return [
+        OverrideDefinitions(
+            configs=[
+                deepseek_v4_recipes.graph_trainer_deepseek_v4_debugmodel_ep_overlap
+            ],
+            test_descr="DSV4 debug GraphTrainer FSDP4 EP4 graph overlap",
+            test_name="aot_fx_trace_deepseek_v4_ep_overlap",
+            ngpu=4,
+            use_real_pg=True,
+            skip_rocm_test=True,
+        ),
+    ]
+
+
 def _build_qwen3_tests() -> list[OverrideDefinitions]:
     """Qwen3-based integration tests (dense + MoE)."""
     return [
@@ -666,6 +684,7 @@ def build_graph_trainer_test_list() -> list[OverrideDefinitions]:
     return (
         _build_llama3_tests()
         + _build_deepseek_v3_tests()
+        + _build_deepseek_v4_tests()
         + _build_qwen3_tests()
         + _build_muse_glimmer_tests()
     )
@@ -774,7 +793,12 @@ def _build_autoparallel_h100_tests() -> list[OverrideDefinitions]:
 
 def build_graph_trainer_h100_test_list() -> list[OverrideDefinitions]:
     """DeepSeek-v3 + Qwen3 + async_tp tests (for H100 machines)."""
-    return _build_deepseek_v3_tests() + _build_qwen3_tests() + _build_async_tp_tests()
+    return (
+        _build_deepseek_v3_tests()
+        + _build_deepseek_v4_tests()
+        + _build_qwen3_tests()
+        + _build_async_tp_tests()
+    )
 
 
 def build_graph_trainer_autoparallel_test_list() -> list[OverrideDefinitions]:
